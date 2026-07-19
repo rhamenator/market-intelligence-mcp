@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
+
+use crate::utc_timestamp::UtcTimestamp;
 
 /// Normalized use-permission value for one dimension of a `SourceUseDecision`
 /// (automated retrieval, commercial use, trading use, redistribution,
@@ -45,8 +46,7 @@ pub struct SourceUseDecision {
     pub robots_snapshot_hash: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub contract_id: Option<String>,
-    #[serde(with = "time::serde::rfc3339")]
-    pub reviewed_at: OffsetDateTime,
+    pub reviewed_at: UtcTimestamp,
     pub reviewed_by: String,
     #[serde(default)]
     pub reason_codes: Vec<String>,
@@ -86,7 +86,7 @@ mod tests {
             terms_snapshot_hash: None,
             robots_snapshot_hash: None,
             contract_id: None,
-            reviewed_at: OffsetDateTime::UNIX_EPOCH,
+            reviewed_at: UtcTimestamp::UNIX_EPOCH,
             reviewed_by: "operator".into(),
             reason_codes: vec!["statutory-commercial-use-restriction".into()],
         }

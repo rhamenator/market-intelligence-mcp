@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
+
+use crate::utc_timestamp::UtcTimestamp;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -56,10 +57,10 @@ pub struct MarketIntelligenceEvent {
     pub quantity: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub notional: Option<String>,
-    #[serde(default, with = "time::serde::rfc3339::option")]
-    pub transaction_time: Option<OffsetDateTime>,
-    #[serde(default, with = "time::serde::rfc3339::option")]
-    pub public_availability_time: Option<OffsetDateTime>,
+    #[serde(default)]
+    pub transaction_time: Option<UtcTimestamp>,
+    #[serde(default)]
+    pub public_availability_time: Option<UtcTimestamp>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reporting_lag_seconds: Option<i64>,
     pub source_record_ids: Vec<String>,

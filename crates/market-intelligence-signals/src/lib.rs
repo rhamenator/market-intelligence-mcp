@@ -52,14 +52,12 @@ impl SignalPlugin for NoActionBaseline {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use market_intelligence_core::BundlePurpose;
-    use time::OffsetDateTime;
+    use market_intelligence_core::{BundlePurpose, UtcTimestamp};
 
-    #[test]
-    fn no_action_baseline_never_recommends_direction() {
-        let bundle = EvidenceBundle {
-            evidence_bundle_id: "b1".into(),
-            created_at: OffsetDateTime::UNIX_EPOCH,
+    fn bundle_with_id(evidence_bundle_id: &str) -> EvidenceBundle {
+        EvidenceBundle {
+            evidence_bundle_id: evidence_bundle_id.into(),
+            created_at: UtcTimestamp::UNIX_EPOCH,
             decision_time: None,
             records: vec![],
             bundle_purpose: BundlePurpose::Research,
@@ -67,7 +65,42 @@ mod tests {
             quarantine_count: 0,
             service_attestation: None,
             canonical_hash: "sha256:0".into(),
-        };
+        }
+    }
+
+    #[test]
+    fn no_action_baseline_never_recommends_direction() {
+        let bundle = bundle_with_id("b1");
+        let assessment = NoActionBaseline.evaluate(&bundle);
+        assert_eq!(assessment.no_action_score, Some(1.0));
+        assert!(!assessment.intent_inferred);
+        assert_eq!(assessment.follow_score, Some(0.0));
+        assert_eq!(assessment.fade_score, Some(0.0));
+        assert_eq!(assessment.direction, SignalDirection::Uncertain);
+    }
+
+    #[test]
+    fn signal_id_is_stable_for_the_same_bundle_id() {
+        let a = NoActionBaseline.evaluate(&bundle_with_id("same-id"));
+        let b = NoActionBaseline.evaluate(&bundle_with_id("same-id"));
+        assert_eq!(a.signal_id, b.signal_id);
+    }
+
+    #[test]
+    fn signal_id_differs_for_different_bundle_ids() {
+        let a = NoActionBaseline.evaluate(&bundle_with_id("bundle-a"));
+        let b = NoActionBaseline.evaluate(&bundle_with_id("bundle-b"));
+        assert_ne!(a.signal_id, b.signal_id);
+    }
+
+    #[test]
+    fn no_action_baseline_ignores_bundle_content_entirely() {
+        // Even a bundle that looks "live-execution-ready" must still only
+        // ever produce no-action from this baseline — it has no signal
+        // logic to be swayed by bundle content at all.
+        let mut bundle = bundle_with_id("b-live");
+        bundle.bundle_purpose = BundlePurpose::LiveExecution;
+        bundle.all_records_execution_eligible = true;
         let assessment = NoActionBaseline.evaluate(&bundle);
         assert_eq!(assessment.no_action_score, Some(1.0));
         assert!(!assessment.intent_inferred);

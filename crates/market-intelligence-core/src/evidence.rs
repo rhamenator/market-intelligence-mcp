@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
 
 use crate::legal_status::MnpiClassification;
+use crate::utc_timestamp::UtcTimestamp;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -21,8 +21,8 @@ pub struct EvidenceRecordRef {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_use_decision_id: Option<String>,
     pub mnpi_classification: MnpiClassification,
-    #[serde(default, with = "time::serde::rfc3339::option")]
-    pub public_availability_time: Option<OffsetDateTime>,
+    #[serde(default)]
+    pub public_availability_time: Option<UtcTimestamp>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub freshness_seconds: Option<i64>,
     pub execution_eligible: bool,
@@ -36,10 +36,9 @@ pub struct EvidenceRecordRef {
 #[serde(rename_all = "kebab-case")]
 pub struct EvidenceBundle {
     pub evidence_bundle_id: String,
-    #[serde(with = "time::serde::rfc3339")]
-    pub created_at: OffsetDateTime,
-    #[serde(default, with = "time::serde::rfc3339::option")]
-    pub decision_time: Option<OffsetDateTime>,
+    pub created_at: UtcTimestamp,
+    #[serde(default)]
+    pub decision_time: Option<UtcTimestamp>,
     pub records: Vec<EvidenceRecordRef>,
     pub bundle_purpose: BundlePurpose,
     pub all_records_execution_eligible: bool,
@@ -74,7 +73,7 @@ mod tests {
             content_hash: None,
             source_use_decision_id: None,
             mnpi_classification: MnpiClassification::PublicConfirmed,
-            public_availability_time: Some(OffsetDateTime::UNIX_EPOCH),
+            public_availability_time: Some(UtcTimestamp::UNIX_EPOCH),
             freshness_seconds: Some(60),
             execution_eligible: true,
         }
@@ -84,7 +83,7 @@ mod tests {
     fn research_bundle_is_never_live_eligible() {
         let bundle = EvidenceBundle {
             evidence_bundle_id: "b1".into(),
-            created_at: OffsetDateTime::UNIX_EPOCH,
+            created_at: UtcTimestamp::UNIX_EPOCH,
             decision_time: None,
             records: vec![eligible_record()],
             bundle_purpose: BundlePurpose::Research,
@@ -100,7 +99,7 @@ mod tests {
     fn quarantined_record_blocks_live_eligibility() {
         let mut bundle = EvidenceBundle {
             evidence_bundle_id: "b2".into(),
-            created_at: OffsetDateTime::UNIX_EPOCH,
+            created_at: UtcTimestamp::UNIX_EPOCH,
             decision_time: None,
             records: vec![eligible_record()],
             bundle_purpose: BundlePurpose::LiveExecution,

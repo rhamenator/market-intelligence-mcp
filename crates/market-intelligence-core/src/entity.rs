@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
 
 use crate::legal_status::LegalStatus;
+use crate::utc_timestamp::UtcTimestamp;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -41,10 +41,10 @@ pub struct EntityProfile {
     pub display_name: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub jurisdiction: Option<String>,
-    #[serde(default, with = "time::serde::rfc3339::option")]
-    pub role_effective_from: Option<OffsetDateTime>,
-    #[serde(default, with = "time::serde::rfc3339::option")]
-    pub role_effective_to: Option<OffsetDateTime>,
+    #[serde(default)]
+    pub role_effective_from: Option<UtcTimestamp>,
+    #[serde(default)]
+    pub role_effective_to: Option<UtcTimestamp>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -73,10 +73,9 @@ pub struct ActorRelationship {
     pub from_entity_id: String,
     pub to_entity_id: String,
     pub relationship_type: RelationshipType,
-    #[serde(with = "time::serde::rfc3339")]
-    pub effective_from: OffsetDateTime,
-    #[serde(default, with = "time::serde::rfc3339::option")]
-    pub effective_to: Option<OffsetDateTime>,
+    pub effective_from: UtcTimestamp,
+    #[serde(default)]
+    pub effective_to: Option<UtcTimestamp>,
     pub confidence: f64,
     pub evidence_ids: Vec<String>,
     pub legal_status: LegalStatus,

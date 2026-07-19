@@ -22,8 +22,20 @@ license = "GPL-3.0-or-later"
 publish = false
 
 [workspace.dependencies]
+# Deliberately minimal. `serde`/`serde_json` are kept because this system's
+# wire format is JSON Schema across three repositories and three languages;
+# hand-rolling a JSON parser would trade a well-audited, extremely widely
+# used dependency for bespoke parsing code, which is a worse security
+# trade-off, not a better one. Every other candidate dependency (`uuid`,
+# `time`, `thiserror`) has been removed in favor of small hand-written
+# replacements — see `market_intelligence_core::utc_timestamp` and the
+# hand-written `Display`/`Error` impls in `market_intelligence_source_policy`
+# and `market_intelligence_storage`.
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-uuid = { version = "1", features = ["v4", "serde"] }
-time = { version = "0.3", features = ["serde", "formatting", "parsing"] }
-thiserror = "1"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = "warn"

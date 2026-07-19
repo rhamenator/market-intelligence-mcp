@@ -12,6 +12,7 @@ pub mod market_intelligence_event;
 pub mod signal_assessment;
 pub mod source_record;
 pub mod source_use_decision;
+pub mod utc_timestamp;
 
 pub use entity::{ActorRelationship, EntityProfile, EntityType, RelationshipType};
 pub use evidence::{BundlePurpose, EvidenceBundle, EvidenceRecordRef};
@@ -20,6 +21,7 @@ pub use market_intelligence_event::{EventDirection, EventType, MarketIntelligenc
 pub use signal_assessment::{SignalAssessment, SignalDirection, SignalType};
 pub use source_record::{CorrectionState, SourceRecord, SourceType};
 pub use source_use_decision::{SourceUseDecision, UsePermission};
+pub use utc_timestamp::{TimestampParseError, UtcTimestamp};
 
 /// The schema-version string this crate currently implements.
 pub const SCHEMA_VERSION: &str = "2.0.0";

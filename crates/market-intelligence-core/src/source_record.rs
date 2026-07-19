@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
 
 use crate::legal_status::MnpiClassification;
+use crate::utc_timestamp::UtcTimestamp;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -46,20 +46,19 @@ pub struct SourceRecord {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub jurisdiction: Option<String>,
     pub retrieval_method: String,
-    #[serde(default, with = "time::serde::rfc3339::option")]
-    pub transaction_time: Option<OffsetDateTime>,
-    #[serde(default, with = "time::serde::rfc3339::option")]
-    pub event_time: Option<OffsetDateTime>,
-    #[serde(default, with = "time::serde::rfc3339::option")]
-    pub filing_time: Option<OffsetDateTime>,
-    #[serde(default, with = "time::serde::rfc3339::option")]
-    pub published_time: Option<OffsetDateTime>,
-    #[serde(default, with = "time::serde::rfc3339::option")]
-    pub public_availability_time: Option<OffsetDateTime>,
-    #[serde(with = "time::serde::rfc3339")]
-    pub retrieved_time: OffsetDateTime,
-    #[serde(default, with = "time::serde::rfc3339::option")]
-    pub corrected_time: Option<OffsetDateTime>,
+    #[serde(default)]
+    pub transaction_time: Option<UtcTimestamp>,
+    #[serde(default)]
+    pub event_time: Option<UtcTimestamp>,
+    #[serde(default)]
+    pub filing_time: Option<UtcTimestamp>,
+    #[serde(default)]
+    pub published_time: Option<UtcTimestamp>,
+    #[serde(default)]
+    pub public_availability_time: Option<UtcTimestamp>,
+    pub retrieved_time: UtcTimestamp,
+    #[serde(default)]
+    pub corrected_time: Option<UtcTimestamp>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub content_hash: Option<String>,
     pub execution_eligible: bool,
@@ -81,8 +80,8 @@ impl SourceRecord {
     /// clock if `public_availability_time` is absent. Backtests and
     /// autonomous decisions must use `public-availability-time`, not
     /// transaction time or later-corrected knowledge.
-    pub fn age_seconds(&self, now: OffsetDateTime) -> i64 {
+    pub fn age_seconds(&self, now: UtcTimestamp) -> i64 {
         let anchor = self.public_availability_time.unwrap_or(self.retrieved_time);
-        (now - anchor).whole_seconds().max(0)
+        now.saturating_diff_seconds(&anchor).max(0)
     }
 }

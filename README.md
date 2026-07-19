@@ -39,6 +39,7 @@ this codebase.
 cargo build --workspace
 cargo test --workspace
 cargo run --bin market_intelligence_server
+cargo run --bin market_intelligence_server -- --check   # nonzero exit on any invariant violation; for CI
 ```
 
 The demo binary constructs a fixture political-disclosure `SourceRecord`
@@ -67,6 +68,43 @@ services/
   market-intelligence-worker/         sandboxed Python worker host (not-started)
   market-intelligence-admin/          operator dashboard (not-started)
 ```
+
+## Dependency policy
+
+The only third-party runtime dependencies in this workspace are `serde` and
+`serde_json`. Everything else is hand-rolled:
+
+- `market_intelligence_core::utc_timestamp::UtcTimestamp` replaces the
+  `time` crate with a UTC-only RFC 3339 parser/formatter (Howard Hinnant's
+  public-domain civil-calendar algorithm), because this system never needs
+  timezones or leap seconds — only UTC.
+- Hand-written `Display`/`Error` impls replace `thiserror` in
+  `market-intelligence-source-policy` and `market-intelligence-storage`.
+- `uuid` was removed outright — nothing in this codebase actually
+  generates a UUID yet; identifiers are opaque `String`s per the shared
+  schema.
+
+`serde`/`serde_json` are kept deliberately: this system's wire format is
+JSON Schema across three repositories and three languages, and hand-rolling
+a JSON parser would trade an extremely widely used, heavily audited
+dependency for bespoke parsing code — a worse security trade-off, not a
+better one. Every crate enforces `unsafe_code = "forbid"` and
+`clippy::all` at the workspace level (`Cargo.toml` `[workspace.lints]`).
+
+## Testing philosophy
+
+The bar here is SQLite-developer-style: boundary/edge-case coverage, no
+third-party test-framework dependency, and dependency-free fuzz/robustness
+testing using a hand-rolled deterministic PRNG rather than `proptest` or
+`cargo-fuzz`. `UtcTimestamp` alone has ~20 boundary tests (leap years
+including the 100/400-year rule, fractional seconds, non-ASCII input) plus
+three fuzz-smoke tests that feed it thousands of random byte strings,
+random mutations of a valid timestamp, and random valid instants — all
+asserting no panic, with reproducible seeds. `cargo test --workspace`
+currently runs 54 tests, all passing. Add tests for new boundary/adversarial
+cases *before* trusting new parsing or policy logic, not after a bug
+surfaces — that discipline already caught and fixed a real bug in the
+shared `decimal-string` schema (see `market-system-contracts`'s changelog).
 
 ## Where this comes from
 

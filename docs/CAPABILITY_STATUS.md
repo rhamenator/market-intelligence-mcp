@@ -15,14 +15,18 @@ unavailable-by-jurisdiction, deprecated
 
 | Crate | Status | Notes |
 |---|---|---|
-| `market-intelligence-core` | fixture-tested | Domain types hand-transcribed from `market-system-contracts`; unit-tested. |
-| `market-intelligence-source-policy` | fixture-tested | Deterministic `SourceUseDecision`/MNPI gate; unit-tested against synthetic decisions. |
+| `market-intelligence-core` | fixture-tested | Domain types hand-transcribed from `market-system-contracts`; 32 unit/boundary/fuzz-smoke tests, including a dependency-free `UtcTimestamp` replacing the `time` crate. |
+| `market-intelligence-source-policy` | fixture-tested | Deterministic `SourceUseDecision`/MNPI gate; 11 tests including an exhaustive per-`MnpiClassification` check and a fuzz-smoke test over random decision/purpose/eligibility combinations. |
 | `market-intelligence-source-sdk` | fixture-tested | `SourceAdapter` trait + `FixtureSourceAdapter`. No real provider implements it yet. |
 | `market-intelligence-signals` | mock | Only `NoActionBaseline` exists, to prove the `SignalPlugin` shape. No calibrated signal family implemented. |
-| `market-intelligence-storage` | schema-only | `SourceRecordStore` trait + in-memory test implementation only. No SQLite/PostgreSQL backend. |
+| `market-intelligence-storage` | schema-only | `SourceRecordStore` trait + in-memory implementation; 7 tests including a fuzz-smoke test over random revision sequences. No SQLite/PostgreSQL backend. |
 | `market-intelligence-entity-resolution` | not-started | |
 | `market-intelligence-mcp-transport` | not-started | No MCP SDK selected yet; no stdio/HTTP transport exists. |
 | `market-intelligence-contracts` | not-started | Reserved for generated bindings; not implemented. |
+
+Total: 54 tests across the workspace, `cargo test --workspace` all green,
+`cargo clippy --workspace` clean under `clippy::all`. Only third-party
+runtime dependencies: `serde`, `serde_json` (dev-only in most crates).
 
 ## Services
 

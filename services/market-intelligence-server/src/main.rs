@@ -10,11 +10,10 @@
 
 use market_intelligence_core::{
     BundlePurpose, CorrectionState, EvidenceBundle, EvidenceRecordRef, MnpiClassification,
-    SourceRecord, SourceType, SourceUseDecision, UsePermission,
+    SourceRecord, SourceType, SourceUseDecision, UsePermission, UtcTimestamp,
 };
 use market_intelligence_signals::{NoActionBaseline, SignalPlugin};
 use market_intelligence_source_sdk::{FixtureSourceAdapter, SourceAdapter};
-use time::OffsetDateTime;
 
 fn demo_fixture_record() -> SourceRecord {
     SourceRecord {
@@ -25,12 +24,12 @@ fn demo_fixture_record() -> SourceRecord {
         source_type: SourceType::OfficialFiling,
         jurisdiction: Some("US".into()),
         retrieval_method: "fixture".into(),
-        transaction_time: Some(OffsetDateTime::UNIX_EPOCH),
+        transaction_time: Some(UtcTimestamp::UNIX_EPOCH),
         event_time: None,
-        filing_time: Some(OffsetDateTime::UNIX_EPOCH),
-        published_time: Some(OffsetDateTime::UNIX_EPOCH),
-        public_availability_time: Some(OffsetDateTime::UNIX_EPOCH),
-        retrieved_time: OffsetDateTime::UNIX_EPOCH,
+        filing_time: Some(UtcTimestamp::UNIX_EPOCH),
+        published_time: Some(UtcTimestamp::UNIX_EPOCH),
+        public_availability_time: Some(UtcTimestamp::UNIX_EPOCH),
+        retrieved_time: UtcTimestamp::UNIX_EPOCH,
         corrected_time: None,
         content_hash: Some("sha256:0000000000000000000000000000000000000000000000000000000000000".into()),
         execution_eligible: false,
@@ -60,13 +59,15 @@ fn demo_decision() -> SourceUseDecision {
         terms_snapshot_hash: None,
         robots_snapshot_hash: None,
         contract_id: None,
-        reviewed_at: OffsetDateTime::UNIX_EPOCH,
+        reviewed_at: UtcTimestamp::UNIX_EPOCH,
         reviewed_by: "operator".into(),
         reason_codes: vec!["statutory-commercial-use-restriction".into()],
     }
 }
 
 fn main() {
+    let check_mode = std::env::args().any(|arg| arg == "--check");
+
     let adapter = FixtureSourceAdapter::new(
         "us-house-periodic-transaction-report",
         vec![demo_fixture_record()],
@@ -74,7 +75,7 @@ fn main() {
     let records = adapter.records();
     let record = &records[0];
     let decision = demo_decision();
-    let now = OffsetDateTime::UNIX_EPOCH;
+    let now = UtcTimestamp::UNIX_EPOCH;
 
     let research_result =
         market_intelligence_source_policy::evaluate_record(record, &decision, BundlePurpose::Research, now);
@@ -117,4 +118,26 @@ fn main() {
         "signal: {:?} no-action-score={:?} intent_inferred={}",
         assessment.signal_type, assessment.no_action_score, assessment.intent_inferred
     );
+
+    if check_mode {
+        let mut failures = Vec::new();
+        if research_result.is_err() {
+            failures.push("research-purpose check should have succeeded".to_string());
+        }
+        if live_result.is_ok() {
+            failures.push("live-execution-purpose check should have been denied".to_string());
+        }
+        if assessment.no_action_score != Some(1.0) || assessment.intent_inferred {
+            failures.push("NoActionBaseline invariant violated".to_string());
+        }
+        if failures.is_empty() {
+            println!("--check: all invariants held");
+        } else {
+            eprintln!("--check: FAILED");
+            for f in &failures {
+                eprintln!("  - {f}");
+            }
+            std::process::exit(1);
+        }
+    }
 }

@@ -1,0 +1,8 @@
+# Incremental compilation's per-object working directories are prone to
+# sporadic "Access is denied" / LNK1201 PDB-write failures on this machine,
+# almost certainly real-time antivirus scanning newly written files in
+# target/. Disabling incremental compilation trades a little rebuild speed
+# for reliable, reproducible builds — which matters more for a test suite
+# that's supposed to be trustworthy.
+[build]
+incremental = false

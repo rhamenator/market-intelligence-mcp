@@ -12,4 +12,6 @@ market_intelligence_source_policy = { path = "../../crates/market-intelligence-s
 market_intelligence_source_sdk = { path = "../../crates/market-intelligence-source-sdk" }
 market_intelligence_signals = { path = "../../crates/market-intelligence-signals" }
 market_intelligence_mcp_transport = { path = "../../crates/market-intelligence-mcp-transport" }
-time = { workspace = true }
+
+[lints]
+workspace = true
