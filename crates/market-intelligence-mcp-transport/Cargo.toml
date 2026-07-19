@@ -1,0 +1,11 @@
+[package]
+name = "market_intelligence_mcp_transport"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+market_intelligence_core = { path = "../market-intelligence-core" }

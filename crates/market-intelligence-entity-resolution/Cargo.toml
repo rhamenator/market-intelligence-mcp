@@ -1,0 +1,10 @@
+[package]
+name = "market_intelligence_entity_resolution"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+market_intelligence_core = { path = "../market-intelligence-core" }

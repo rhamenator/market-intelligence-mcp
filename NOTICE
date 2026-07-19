@@ -1,0 +1,15 @@
+Market Intelligence MCP
+Copyright (C) 2026 rhamenator and contributors
+
+This repository is licensed under the GNU General Public License, version 3
+(or, at your option, any later version). See LICENSE.
+
+Research and safety intent notice:
+
+- This service collects and normalizes lawfully public or properly licensed
+  market intelligence. It is educational and research software.
+- It is not investment, legal, accounting, or tax advice.
+- It contains no order-entry tools and holds no broker, brokerage, exchange,
+  custody, or withdrawal credentials of any kind. See docs/THREAT_MODEL.md.
+- Public availability of information does not by itself establish a lawful
+  right to commercial or trading use; see docs/SOURCE_POLICY.md.

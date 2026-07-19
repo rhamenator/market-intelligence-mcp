@@ -1,0 +1,15 @@
+[package]
+name = "market_intelligence_server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+market_intelligence_core = { path = "../../crates/market-intelligence-core" }
+market_intelligence_storage = { path = "../../crates/market-intelligence-storage" }
+market_intelligence_source_policy = { path = "../../crates/market-intelligence-source-policy" }
+market_intelligence_source_sdk = { path = "../../crates/market-intelligence-source-sdk" }
+market_intelligence_signals = { path = "../../crates/market-intelligence-signals" }
+market_intelligence_mcp_transport = { path = "../../crates/market-intelligence-mcp-transport" }
+time = { workspace = true }
