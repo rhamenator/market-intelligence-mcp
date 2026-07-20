@@ -149,4 +149,107 @@ mod tests {
     fn different_inputs_produce_different_hashes() {
         assert_ne!(sha256_hex(b"a"), sha256_hex(b"b"));
     }
+
+    /// Cross-repo conformance with `market-system-contracts`'
+    /// `docs/CANONICAL_HASHING.md` — not just "this function is internally
+    /// consistent" but "this function agrees with the independent Python
+    /// reference implementation and its committed test vectors"
+    /// (`testdata/canonical-hashing/vectors.json`). `serde_json::Value`'s
+    /// `Object` is a `BTreeMap` (the `preserve_order` feature is not
+    /// enabled anywhere in this workspace's `Cargo.toml`), so
+    /// `serde_json::to_string` on a `Value` already emits sorted keys —
+    /// no manual canonicalization step needed, matching the spec's own
+    /// "Rust" language note.
+    mod canonical_hashing_spec_conformance {
+        use super::*;
+
+        fn canonical_hash_of(value: &serde_json::Value) -> String {
+            canonical_hash(serde_json::to_string(value).unwrap().as_bytes())
+        }
+
+        #[test]
+        fn empty_object() {
+            assert_eq!(
+                canonical_hash_of(&serde_json::json!({})),
+                "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+            );
+        }
+
+        #[test]
+        fn object_keys_are_sorted_regardless_of_construction_order() {
+            let value = serde_json::json!({"z": 1, "a": 2, "m": 3});
+            assert_eq!(
+                canonical_hash_of(&value),
+                "sha256:ebba85cfdc0a724b6cc327ecc545faeb38b9fe02eca603b430eb872f5cf75370"
+            );
+        }
+
+        #[test]
+        fn nested_objects_are_sorted_at_every_level() {
+            let value = serde_json::json!({"outer": {"z": 1, "a": 2}, "aaa": true});
+            assert_eq!(
+                canonical_hash_of(&value),
+                "sha256:4c8a00c0457e0d4066b8cb202fe0153bfdb1825080e996ab3b4006874e07ad95"
+            );
+        }
+
+        #[test]
+        fn array_element_order_is_preserved_not_sorted() {
+            let value = serde_json::json!([3, 1, 2]);
+            assert_eq!(
+                canonical_hash_of(&value),
+                "sha256:51bda7ab4e44726cde71fcb6e4b515357059bb6b6dd5146d1fc50f73f11678c6"
+            );
+        }
+
+        #[test]
+        fn non_ascii_characters_are_emitted_literally_not_escaped() {
+            let value = serde_json::json!({"text": "SPY 日本語 🚀"});
+            assert_eq!(
+                canonical_hash_of(&value),
+                "sha256:2f9e5bd7e73957586c36f22d4bff966dff293948b5b41e3ada3db551a1ca25e4"
+            );
+        }
+
+        /// The float caveat `docs/CANONICAL_HASHING.md` documents: this
+        /// assertion is what that document's claim that "Rust's
+        /// `serde_json` and Python's `json` module agree on float
+        /// formatting for `0.0`" actually rests on. If this test ever
+        /// fails after a `serde_json` upgrade, the spec document's claim
+        /// is now false and needs updating, not this test.
+        #[test]
+        fn full_trade_intent_golden_fixture_matches_the_python_reference_hash() {
+            let value = serde_json::json!({
+                "schema-version": "2.0.0",
+                "intent-id": "3f4b3c9a-9b7e-4a3d-8f2f-000000000001",
+                "strategy-id": "whale-follow-v1",
+                "decision-id": "3f4b3c9a-9b7e-4a3d-8f2f-000000000002",
+                "account-alias": "paper-global-1",
+                "instrument": {
+                    "schema-version": "2.0.0",
+                    "instrument-id": "us-equity-spy-arcx",
+                    "asset-class": "equity",
+                    "symbol": "SPY",
+                    "venue-mic": "ARCX",
+                    "contract-multiplier": "1"
+                },
+                "side": "buy",
+                "position-effect": "unknown",
+                "order-type": "limit",
+                "quantity": "0",
+                "limit-price": null,
+                "time-in-force": "day",
+                "decision-time": "2026-07-19T14:30:00Z",
+                "confidence": 0.0,
+                "rationale": "Evidence stale beyond policy; no-action per source-policy freshness gate.",
+                "signal-ids": [],
+                "mode": "paper",
+                "idempotency-key": "no-action-2026-07-19T14:30:00Z-spy"
+            });
+            assert_eq!(
+                canonical_hash_of(&value),
+                "sha256:6394da23f7d8fd275a0f86db9bd6bad76a0d0acadfb5a804b6e5e714f3060117"
+            );
+        }
+    }
 }

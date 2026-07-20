@@ -7,6 +7,18 @@
 //! so the resulting bundle actually satisfies
 //! `evidence-bundle.schema.json`'s `canonical-hash` field, not a
 //! placeholder string.
+//!
+//! `compute_canonical_hash` below conforms to
+//! `market-system-contracts`'s `docs/CANONICAL_HASHING.md` — sorted
+//! object keys, compact UTF-8 JSON, SHA-256 — for free, because
+//! `serde_json::Value`'s `Object` is a `BTreeMap` in this workspace (the
+//! `preserve_order` feature is never enabled), so any `Value` this
+//! function serializes already has sorted keys with no extra step. See
+//! `market_intelligence_core::sha256`'s `canonical_hashing_spec_conformance`
+//! tests for the cross-language verification this claim rests on — this
+//! is what makes the resulting hash independently reverifiable by
+//! `trade-guard-mcp` (or any other language implementation) rather than
+//! only self-consistent within this one Rust codebase.
 
 use market_intelligence_core::{
     BundlePurpose, EvidenceBundle, EvidenceRecordRef, SourceRecord, SourceUseDecision, UtcTimestamp,
