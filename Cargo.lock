@@ -36,6 +36,12 @@ name = "market_intelligence_mcp_transport"
 version = "0.1.0"
 dependencies = [
  "market_intelligence_core",
+ "market_intelligence_signals",
+ "market_intelligence_source_policy",
+ "market_intelligence_source_sdk",
+ "market_intelligence_storage",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

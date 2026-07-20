@@ -9,6 +9,7 @@ pub mod entity;
 pub mod evidence;
 pub mod legal_status;
 pub mod market_intelligence_event;
+pub mod sha256;
 pub mod signal_assessment;
 pub mod source_record;
 pub mod source_use_decision;
@@ -18,6 +19,7 @@ pub use entity::{ActorRelationship, EntityProfile, EntityType, RelationshipType}
 pub use evidence::{BundlePurpose, EvidenceBundle, EvidenceRecordRef};
 pub use legal_status::{LegalStatus, MnpiClassification};
 pub use market_intelligence_event::{EventDirection, EventType, MarketIntelligenceEvent};
+pub use sha256::{canonical_hash, sha256 as sha256_bytes, sha256_hex};
 pub use signal_assessment::{SignalAssessment, SignalDirection, SignalType};
 pub use source_record::{CorrectionState, SourceRecord, SourceType};
 pub use source_use_decision::{SourceUseDecision, UsePermission};

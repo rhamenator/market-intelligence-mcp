@@ -331,8 +331,8 @@ mod tests {
             let mnpi = rng.choice(&mnpi_options);
             let trading_use = rng.choice(&use_options);
             let purpose = rng.choice(&purpose_options);
-            let execution_eligible = rng.next() % 2 == 0;
-            let has_public_time = rng.next() % 2 == 0;
+            let execution_eligible = rng.next().is_multiple_of(2);
+            let has_public_time = rng.next().is_multiple_of(2);
             let staleness = (rng.next() % 100_000) as i64;
             let expected_lag = (rng.next() % 100_000) as i64;
 

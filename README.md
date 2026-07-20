@@ -26,20 +26,22 @@ broker/execution credentials. See `docs/THREAT_MODEL.md`.
 
 ## Status
 
-This is a **Phase 2 fixture-only vertical slice**. See
-[`docs/CAPABILITY_STATUS.md`](docs/CAPABILITY_STATUS.md) for the exact,
-honest status of every crate, service, and provider — most things here are
-`not-started` or `mock`. Nothing in this repository talks to a real external
-provider, and no order-entry or broker-credential type exists anywhere in
-this codebase.
+This is a **Phase 2 fixture-only vertical slice, now with a real MCP
+server**. See [`docs/CAPABILITY_STATUS.md`](docs/CAPABILITY_STATUS.md) for
+the exact, honest status of every crate, service, and provider — most
+providers/signals/storage backends are still `not-started` or `mock`.
+Nothing in this repository talks to a real external provider, and no
+order-entry or broker-credential type exists anywhere in this codebase —
+never will.
 
 ## What actually works today
 
 ```bash
 cargo build --workspace
 cargo test --workspace
-cargo run --bin market_intelligence_server
+cargo run --bin market_intelligence_server             # one-shot demo, unchanged from before
 cargo run --bin market_intelligence_server -- --check   # nonzero exit on any invariant violation; for CI
+cargo run --bin market_intelligence_server -- mcp       # real MCP stdio JSON-RPC server, 11 tools
 ```
 
 The demo binary constructs a fixture political-disclosure `SourceRecord`
@@ -49,6 +51,15 @@ and shows the live-execution attempt being correctly denied — then runs the
 `NoActionBaseline` signal against the resulting evidence bundle. This proves
 the core safety property end to end: **a research-only source can never back
 a live-execution decision**, enforced by code, not by convention.
+
+The `mcp` subcommand exposes that same underlying logic (plus the
+in-memory store and a new multi-record `EvidenceBundle` builder) as 11
+callable, read-only MCP tools — `health`, `capabilities`, `tool-catalog`,
+`self-test`, `list-configured-sources`, `ingest-source-records`,
+`get-source-record-history`, `get-source-record-as-of`,
+`check-source-use-eligibility`, `build-evidence-bundle`,
+`evaluate-signal`. See `crates/market-intelligence-mcp-transport/src/tools.rs`
+for exact input schemas.
 
 ## Layout
 
@@ -61,9 +72,9 @@ crates/
   market-intelligence-entity-resolution/  (not-started)
   market-intelligence-signals/        SignalPlugin trait + NoActionBaseline (mock)
   market-intelligence-source-sdk/     SourceAdapter trait + fixture adapter (fixture-tested)
-  market-intelligence-mcp-transport/  MCP stdio/HTTP transport (not-started)
+  market-intelligence-mcp-transport/  MCP stdio JSON-RPC transport, 11 tools (fixture-tested + real end-to-end)
 services/
-  market-intelligence-server/         demo binary (fixture-tested)
+  market-intelligence-server/         demo binary + real MCP stdio server (fixture-tested + real end-to-end)
   market-intelligence-scheduler/      respectful-retrieval scheduler (not-started)
   market-intelligence-worker/         sandboxed Python worker host (not-started)
   market-intelligence-admin/          operator dashboard (not-started)
@@ -101,7 +112,7 @@ including the 100/400-year rule, fractional seconds, non-ASCII input) plus
 three fuzz-smoke tests that feed it thousands of random byte strings,
 random mutations of a valid timestamp, and random valid instants — all
 asserting no panic, with reproducible seeds. `cargo test --workspace`
-currently runs 54 tests, all passing. Add tests for new boundary/adversarial
+currently runs 87 tests, all passing. Add tests for new boundary/adversarial
 cases *before* trusting new parsing or policy logic, not after a bug
 surfaces — that discipline already caught and fixed a real bug in the
 shared `decimal-string` schema (see `market-system-contracts`'s changelog).

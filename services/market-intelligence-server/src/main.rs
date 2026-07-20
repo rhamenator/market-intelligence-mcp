@@ -1,17 +1,21 @@
-//! `market-intelligence-server` — Phase 2 fixture-only vertical slice.
+//! `market-intelligence-server` — Phase 2 fixture-only vertical slice,
+//! now with a real MCP stdio server (`mcp` subcommand).
 //!
-//! Status: fixture-tested. This binary wires together the source-policy
-//! engine, a fixture source adapter, and the `NoActionBaseline` signal to
-//! prove the crates compose end to end with no network access and no
-//! external credentials. It is not an MCP server yet — `--serve-mcp` is not
-//! implemented because `market_intelligence_mcp_transport` is not-started.
-//! Run with no arguments for a one-shot demo; `--check` runs the same path
-//! and exits nonzero on any policy violation (useful in CI).
+//! Status: fixture-tested + real end-to-end MCP transport. This binary
+//! wires together the source-policy engine, a fixture source adapter, and
+//! the `NoActionBaseline` signal to prove the crates compose end to end
+//! with no network access and no external credentials. Run with no
+//! arguments for a one-shot demo; `--check` runs the same path and exits
+//! nonzero on any policy violation (useful in CI); `mcp` runs a real MCP
+//! stdio JSON-RPC server (`market_intelligence_mcp_transport`) exposing
+//! the same underlying logic as 11 callable tools.
 
 use market_intelligence_core::{
     BundlePurpose, CorrectionState, EvidenceBundle, EvidenceRecordRef, MnpiClassification,
     SourceRecord, SourceType, SourceUseDecision, UsePermission, UtcTimestamp,
 };
+use market_intelligence_mcp_transport::mcp::run_stdio;
+use market_intelligence_mcp_transport::state::IntelligenceState;
 use market_intelligence_signals::{NoActionBaseline, SignalPlugin};
 use market_intelligence_source_sdk::{FixtureSourceAdapter, SourceAdapter};
 
@@ -66,7 +70,21 @@ fn demo_decision() -> SourceUseDecision {
 }
 
 fn main() {
-    let check_mode = std::env::args().any(|arg| arg == "--check");
+    let args: Vec<String> = std::env::args().collect();
+    if args.get(1).map(String::as_str) == Some("mcp") {
+        let adapter = FixtureSourceAdapter::new(
+            "us-house-periodic-transaction-report",
+            vec![demo_fixture_record()],
+        );
+        let mut state = IntelligenceState::new(vec![adapter]);
+        if let Err(e) = run_stdio(&mut state) {
+            eprintln!("market-intelligence-server: stdio transport error: {e}");
+            std::process::exit(1);
+        }
+        return;
+    }
+
+    let check_mode = args.iter().any(|arg| arg == "--check");
 
     let adapter = FixtureSourceAdapter::new(
         "us-house-periodic-transaction-report",
