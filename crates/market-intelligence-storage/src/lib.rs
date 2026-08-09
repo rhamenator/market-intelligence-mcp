@@ -40,7 +40,10 @@ impl fmt::Display for StoreError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::RevisionNotMonotonic(rev) => {
-                write!(f, "revision {rev} is not greater than the latest stored revision")
+                write!(
+                    f,
+                    "revision {rev} is not greater than the latest stored revision"
+                )
             }
         }
     }
@@ -136,7 +139,9 @@ mod tests {
     #[test]
     fn append_rejects_non_monotonic_revision() {
         let store = InMemorySourceRecordStore::new();
-        store.append(record_at(1, Some(UtcTimestamp::UNIX_EPOCH))).unwrap();
+        store
+            .append(record_at(1, Some(UtcTimestamp::UNIX_EPOCH)))
+            .unwrap();
         let result = store.append(record_at(1, Some(UtcTimestamp::UNIX_EPOCH)));
         assert_eq!(result, Err(StoreError::RevisionNotMonotonic(1)));
         let result = store.append(record_at(0, Some(UtcTimestamp::UNIX_EPOCH)));
@@ -147,7 +152,9 @@ mod tests {
     fn append_accepts_strictly_increasing_revisions() {
         let store = InMemorySourceRecordStore::new();
         for revision in 1..=5 {
-            store.append(record_at(revision, Some(UtcTimestamp::UNIX_EPOCH))).unwrap();
+            store
+                .append(record_at(revision, Some(UtcTimestamp::UNIX_EPOCH)))
+                .unwrap();
         }
         assert_eq!(store.history("rec-1").len(), 5);
     }
@@ -216,7 +223,10 @@ mod tests {
             let revision = (rng.next() % 50) as u32; // deliberately churns near the boundary
             let result = store.append(record_at(revision, Some(UtcTimestamp::UNIX_EPOCH)));
             if revision > highest_accepted {
-                assert!(result.is_ok(), "expected acceptance of increasing revision {revision}");
+                assert!(
+                    result.is_ok(),
+                    "expected acceptance of increasing revision {revision}"
+                );
                 highest_accepted = revision;
             } else {
                 assert_eq!(result, Err(StoreError::RevisionNotMonotonic(revision)));

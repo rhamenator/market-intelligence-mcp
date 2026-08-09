@@ -10,7 +10,7 @@ on-chain crypto-whale activity.
 This service is one of three repositories in the Smart Dynamic Hedge V2
 architecture:
 
-- [`smart-dynamic-hedge`](https://github.com/rhamenator/smart-dynamic-hedge) — strategy, research, GUI, and autonomy plane. Consumes this service's normalized intelligence.
+- [`smart-dynamic-hedge-project`](https://github.com/rhamenator/smart-dynamic-hedge-project) — strategy, research, GUI, and autonomy plane. Consumes this service's normalized intelligence.
 - **`market-intelligence-mcp`** (this repo) — source terms, robots, licensing, provenance, staleness, correction handling, and MNPI quarantine. **No order-entry tools. No broker credentials, ever.**
 - [`trade-guard-mcp`](https://github.com/rhamenator/trade-guard-mcp) — account state, risk policy, and execution.
 
@@ -112,10 +112,19 @@ including the 100/400-year rule, fractional seconds, non-ASCII input) plus
 three fuzz-smoke tests that feed it thousands of random byte strings,
 random mutations of a valid timestamp, and random valid instants — all
 asserting no panic, with reproducible seeds. `cargo test --workspace`
-currently runs 87 tests, all passing. Add tests for new boundary/adversarial
-cases *before* trusting new parsing or policy logic, not after a bug
-surfaces — that discipline already caught and fixed a real bug in the
-shared `decimal-string` schema (see `market-system-contracts`'s changelog).
+exercises more than 90 unit, boundary, robustness, and transport tests. Add
+tests for new boundary/adversarial cases *before* trusting new parsing or
+policy logic, not after a bug surfaces — that discipline already caught and
+fixed a real bug in the shared `decimal-string` schema (see
+`market-system-contracts`'s changelog).
+
+## Security and publication status
+
+The repository intentionally contains no provider integrations, order-entry
+tools, or broker credentials. See [SECURITY.md](SECURITY.md) for private
+vulnerability reporting, [the threat model](docs/THREAT_MODEL.md) for trust
+boundaries, and [the publication-readiness audit](docs/PUBLICATION_READINESS.md)
+for the checks completed before public release.
 
 ## Where this comes from
 

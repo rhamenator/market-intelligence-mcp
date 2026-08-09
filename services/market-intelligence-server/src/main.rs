@@ -35,7 +35,9 @@ fn demo_fixture_record() -> SourceRecord {
         public_availability_time: Some(UtcTimestamp::UNIX_EPOCH),
         retrieved_time: UtcTimestamp::UNIX_EPOCH,
         corrected_time: None,
-        content_hash: Some("sha256:0000000000000000000000000000000000000000000000000000000000000".into()),
+        content_hash: Some(
+            "sha256:0000000000000000000000000000000000000000000000000000000000000".into(),
+        ),
         execution_eligible: false,
         redistribution_eligible: false,
         quality: Some(0.8),
@@ -95,8 +97,12 @@ fn main() {
     let decision = demo_decision();
     let now = UtcTimestamp::UNIX_EPOCH;
 
-    let research_result =
-        market_intelligence_source_policy::evaluate_record(record, &decision, BundlePurpose::Research, now);
+    let research_result = market_intelligence_source_policy::evaluate_record(
+        record,
+        &decision,
+        BundlePurpose::Research,
+        now,
+    );
     let live_result = market_intelligence_source_policy::evaluate_record(
         record,
         &decision,

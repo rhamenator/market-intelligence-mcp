@@ -15,7 +15,10 @@ pub struct IntelligenceState {
 
 impl IntelligenceState {
     pub fn new(adapters: Vec<FixtureSourceAdapter>) -> Self {
-        IntelligenceState { adapters, store: InMemorySourceRecordStore::new() }
+        IntelligenceState {
+            adapters,
+            store: InMemorySourceRecordStore::new(),
+        }
     }
 
     pub fn adapter(&self, source_id: &str) -> Option<&FixtureSourceAdapter> {

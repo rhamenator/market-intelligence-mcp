@@ -29,14 +29,25 @@ impl fmt::Display for PolicyDenialReason {
                 write!(f, "mnpi classification {class:?} is not execution-eligible")
             }
             Self::TradingUseNotPermitted => {
-                write!(f, "source-use decision does not permit trading use for the requested purpose")
+                write!(
+                    f,
+                    "source-use decision does not permit trading use for the requested purpose"
+                )
             }
-            Self::RecordNotExecutionEligible => write!(f, "record is not marked execution-eligible"),
+            Self::RecordNotExecutionEligible => {
+                write!(f, "record is not marked execution-eligible")
+            }
             Self::NotYetPubliclyAvailable => {
-                write!(f, "public-availability-time is missing or after the decision time")
+                write!(
+                    f,
+                    "public-availability-time is missing or after the decision time"
+                )
             }
             Self::StaleBeyondPolicy => {
-                write!(f, "record is stale beyond the source's expected reporting lag policy")
+                write!(
+                    f,
+                    "record is stale beyond the source's expected reporting lag policy"
+                )
             }
         }
     }
@@ -55,15 +66,18 @@ pub fn evaluate_record(
     purpose: BundlePurpose,
     decision_time: UtcTimestamp,
 ) -> Result<(), PolicyDenialReason> {
-    if !record.mnpi_classification.is_execution_eligible_class() && purpose != BundlePurpose::Research
+    if !record.mnpi_classification.is_execution_eligible_class()
+        && purpose != BundlePurpose::Research
     {
         return Err(PolicyDenialReason::MnpiNotExecutionEligible(
             record.mnpi_classification,
         ));
     }
 
-    if matches!(purpose, BundlePurpose::PaperExecution | BundlePurpose::LiveExecution)
-        && !decision.permits_live_execution()
+    if matches!(
+        purpose,
+        BundlePurpose::PaperExecution | BundlePurpose::LiveExecution
+    ) && !decision.permits_live_execution()
     {
         return Err(PolicyDenialReason::TradingUseNotPermitted);
     }
@@ -82,9 +96,10 @@ pub fn evaluate_record(
         return Err(PolicyDenialReason::NotYetPubliclyAvailable);
     }
 
-    if let (Some(observed_lag), Some(expected_lag)) =
-        (record.staleness_seconds, record.expected_reporting_lag_seconds)
-        && purpose == BundlePurpose::LiveExecution
+    if let (Some(observed_lag), Some(expected_lag)) = (
+        record.staleness_seconds,
+        record.expected_reporting_lag_seconds,
+    ) && purpose == BundlePurpose::LiveExecution
         && observed_lag > expected_lag.saturating_mul(3)
     {
         return Err(PolicyDenialReason::StaleBeyondPolicy);
@@ -152,7 +167,12 @@ mod tests {
     fn research_only_source_cannot_back_a_live_execution_bundle() {
         let r = record(MnpiClassification::PublicConfirmed, true);
         let d = decision(UsePermission::ResearchOnly);
-        let result = evaluate_record(&r, &d, BundlePurpose::LiveExecution, UtcTimestamp::UNIX_EPOCH);
+        let result = evaluate_record(
+            &r,
+            &d,
+            BundlePurpose::LiveExecution,
+            UtcTimestamp::UNIX_EPOCH,
+        );
         assert_eq!(result, Err(PolicyDenialReason::TradingUseNotPermitted));
     }
 
@@ -168,7 +188,12 @@ mod tests {
     fn suspected_nonpublic_record_is_quarantined_even_with_allowed_decision() {
         let r = record(MnpiClassification::SuspectedNonpublic, true);
         let d = decision(UsePermission::Allowed);
-        let result = evaluate_record(&r, &d, BundlePurpose::PaperExecution, UtcTimestamp::UNIX_EPOCH);
+        let result = evaluate_record(
+            &r,
+            &d,
+            BundlePurpose::PaperExecution,
+            UtcTimestamp::UNIX_EPOCH,
+        );
         assert_eq!(
             result,
             Err(PolicyDenialReason::MnpiNotExecutionEligible(
@@ -182,7 +207,12 @@ mod tests {
         let mut r = record(MnpiClassification::PublicConfirmed, true);
         r.public_availability_time = UtcTimestamp::UNIX_EPOCH.checked_add_days(1);
         let d = decision(UsePermission::Allowed);
-        let result = evaluate_record(&r, &d, BundlePurpose::LiveExecution, UtcTimestamp::UNIX_EPOCH);
+        let result = evaluate_record(
+            &r,
+            &d,
+            BundlePurpose::LiveExecution,
+            UtcTimestamp::UNIX_EPOCH,
+        );
         assert_eq!(result, Err(PolicyDenialReason::NotYetPubliclyAvailable));
     }
 
@@ -190,7 +220,12 @@ mod tests {
     fn allowed_and_fresh_and_public_permits_live_execution() {
         let r = record(MnpiClassification::PublicConfirmed, true);
         let d = decision(UsePermission::Allowed);
-        let result = evaluate_record(&r, &d, BundlePurpose::LiveExecution, UtcTimestamp::UNIX_EPOCH);
+        let result = evaluate_record(
+            &r,
+            &d,
+            BundlePurpose::LiveExecution,
+            UtcTimestamp::UNIX_EPOCH,
+        );
         assert_eq!(result, Ok(()));
     }
 
@@ -200,7 +235,12 @@ mod tests {
         r.staleness_seconds = Some(1_000);
         r.expected_reporting_lag_seconds = Some(100); // 10x expected lag
         let d = decision(UsePermission::Allowed);
-        let result = evaluate_record(&r, &d, BundlePurpose::LiveExecution, UtcTimestamp::UNIX_EPOCH);
+        let result = evaluate_record(
+            &r,
+            &d,
+            BundlePurpose::LiveExecution,
+            UtcTimestamp::UNIX_EPOCH,
+        );
         assert_eq!(result, Err(PolicyDenialReason::StaleBeyondPolicy));
     }
 
@@ -219,7 +259,12 @@ mod tests {
         let mut r = record(MnpiClassification::PublicConfirmed, true);
         r.public_availability_time = None;
         let d = decision(UsePermission::Allowed);
-        let result = evaluate_record(&r, &d, BundlePurpose::LiveExecution, UtcTimestamp::UNIX_EPOCH);
+        let result = evaluate_record(
+            &r,
+            &d,
+            BundlePurpose::LiveExecution,
+            UtcTimestamp::UNIX_EPOCH,
+        );
         assert_eq!(result, Err(PolicyDenialReason::NotYetPubliclyAvailable));
     }
 
@@ -227,7 +272,12 @@ mod tests {
     fn record_not_flagged_execution_eligible_blocks_live_even_with_allowed_decision() {
         let r = record(MnpiClassification::PublicConfirmed, false);
         let d = decision(UsePermission::Allowed);
-        let result = evaluate_record(&r, &d, BundlePurpose::LiveExecution, UtcTimestamp::UNIX_EPOCH);
+        let result = evaluate_record(
+            &r,
+            &d,
+            BundlePurpose::LiveExecution,
+            UtcTimestamp::UNIX_EPOCH,
+        );
         assert_eq!(result, Err(PolicyDenialReason::RecordNotExecutionEligible));
     }
 

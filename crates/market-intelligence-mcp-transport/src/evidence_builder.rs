@@ -48,8 +48,13 @@ pub fn build_evidence_bundle(
     let mut quarantine_count = 0u32;
 
     for item in items {
-        let eligible =
-            market_intelligence_source_policy::evaluate_record(&item.record, &item.decision, purpose, decision_time).is_ok();
+        let eligible = market_intelligence_source_policy::evaluate_record(
+            &item.record,
+            &item.decision,
+            purpose,
+            decision_time,
+        )
+        .is_ok();
         if !eligible && purpose == BundlePurpose::LiveExecution {
             quarantine_count += 1;
         }
@@ -64,7 +69,8 @@ pub fn build_evidence_bundle(
         });
     }
 
-    let all_records_execution_eligible = !refs.is_empty() && refs.iter().all(|r| r.execution_eligible);
+    let all_records_execution_eligible =
+        !refs.is_empty() && refs.iter().all(|r| r.execution_eligible);
     let canonical_hash = compute_canonical_hash(evidence_bundle_id, purpose, &refs);
 
     EvidenceBundle {
@@ -80,7 +86,11 @@ pub fn build_evidence_bundle(
     }
 }
 
-fn compute_canonical_hash(evidence_bundle_id: &str, purpose: BundlePurpose, refs: &[EvidenceRecordRef]) -> String {
+fn compute_canonical_hash(
+    evidence_bundle_id: &str,
+    purpose: BundlePurpose,
+    refs: &[EvidenceRecordRef],
+) -> String {
     let payload = serde_json::json!({
         "evidence-bundle-id": evidence_bundle_id,
         "bundle-purpose": purpose,
@@ -93,9 +103,15 @@ fn compute_canonical_hash(evidence_bundle_id: &str, purpose: BundlePurpose, refs
 #[cfg(test)]
 mod tests {
     use super::*;
-    use market_intelligence_core::{CorrectionState, MnpiClassification, SourceType, UsePermission};
+    use market_intelligence_core::{
+        CorrectionState, MnpiClassification, SourceType, UsePermission,
+    };
 
-    fn record(id: &str, mnpi: market_intelligence_core::MnpiClassification, execution_eligible: bool) -> SourceRecord {
+    fn record(
+        id: &str,
+        mnpi: market_intelligence_core::MnpiClassification,
+        execution_eligible: bool,
+    ) -> SourceRecord {
         SourceRecord {
             schema_version: "2.0.0".into(),
             source_record_id: id.into(),
@@ -151,7 +167,13 @@ mod tests {
             record: record("rec-1", MnpiClassification::PublicButUseRestricted, true),
             decision: decision(UsePermission::ResearchOnly),
         }];
-        let bundle = build_evidence_bundle("bundle-1", &items, BundlePurpose::Research, UtcTimestamp::UNIX_EPOCH, UtcTimestamp::UNIX_EPOCH);
+        let bundle = build_evidence_bundle(
+            "bundle-1",
+            &items,
+            BundlePurpose::Research,
+            UtcTimestamp::UNIX_EPOCH,
+            UtcTimestamp::UNIX_EPOCH,
+        );
         assert!(bundle.all_records_execution_eligible);
         assert_eq!(bundle.quarantine_count, 0);
         assert!(bundle.canonical_hash.starts_with("sha256:"));
@@ -163,7 +185,13 @@ mod tests {
             record: record("rec-1", MnpiClassification::PublicConfirmed, true),
             decision: decision(UsePermission::ResearchOnly),
         }];
-        let bundle = build_evidence_bundle("bundle-1", &items, BundlePurpose::LiveExecution, UtcTimestamp::UNIX_EPOCH, UtcTimestamp::UNIX_EPOCH);
+        let bundle = build_evidence_bundle(
+            "bundle-1",
+            &items,
+            BundlePurpose::LiveExecution,
+            UtcTimestamp::UNIX_EPOCH,
+            UtcTimestamp::UNIX_EPOCH,
+        );
         assert!(!bundle.all_records_execution_eligible);
         assert_eq!(bundle.quarantine_count, 1);
         assert!(!bundle.records[0].execution_eligible);
@@ -172,10 +200,26 @@ mod tests {
     #[test]
     fn mixed_eligibility_records_are_reflected_individually() {
         let items = vec![
-            RecordAndDecision { record: record("rec-eligible", MnpiClassification::PublicConfirmed, true), decision: decision(UsePermission::Allowed) },
-            RecordAndDecision { record: record("rec-ineligible", MnpiClassification::SuspectedNonpublic, true), decision: decision(UsePermission::Allowed) },
+            RecordAndDecision {
+                record: record("rec-eligible", MnpiClassification::PublicConfirmed, true),
+                decision: decision(UsePermission::Allowed),
+            },
+            RecordAndDecision {
+                record: record(
+                    "rec-ineligible",
+                    MnpiClassification::SuspectedNonpublic,
+                    true,
+                ),
+                decision: decision(UsePermission::Allowed),
+            },
         ];
-        let bundle = build_evidence_bundle("bundle-1", &items, BundlePurpose::LiveExecution, UtcTimestamp::UNIX_EPOCH, UtcTimestamp::UNIX_EPOCH);
+        let bundle = build_evidence_bundle(
+            "bundle-1",
+            &items,
+            BundlePurpose::LiveExecution,
+            UtcTimestamp::UNIX_EPOCH,
+            UtcTimestamp::UNIX_EPOCH,
+        );
         assert!(!bundle.all_records_execution_eligible);
         assert_eq!(bundle.quarantine_count, 1);
         assert!(bundle.records[0].execution_eligible);
@@ -184,7 +228,13 @@ mod tests {
 
     #[test]
     fn empty_items_produce_an_empty_never_eligible_bundle() {
-        let bundle = build_evidence_bundle("bundle-empty", &[], BundlePurpose::Research, UtcTimestamp::UNIX_EPOCH, UtcTimestamp::UNIX_EPOCH);
+        let bundle = build_evidence_bundle(
+            "bundle-empty",
+            &[],
+            BundlePurpose::Research,
+            UtcTimestamp::UNIX_EPOCH,
+            UtcTimestamp::UNIX_EPOCH,
+        );
         assert!(bundle.records.is_empty());
         assert!(!bundle.all_records_execution_eligible);
         assert_eq!(bundle.quarantine_count, 0);
@@ -196,8 +246,20 @@ mod tests {
             record: record("rec-1", MnpiClassification::PublicConfirmed, true),
             decision: decision(UsePermission::Allowed),
         }];
-        let a = build_evidence_bundle("bundle-1", &items, BundlePurpose::LiveExecution, UtcTimestamp::UNIX_EPOCH, UtcTimestamp::UNIX_EPOCH);
-        let b = build_evidence_bundle("bundle-1", &items, BundlePurpose::LiveExecution, UtcTimestamp::UNIX_EPOCH, UtcTimestamp::UNIX_EPOCH);
+        let a = build_evidence_bundle(
+            "bundle-1",
+            &items,
+            BundlePurpose::LiveExecution,
+            UtcTimestamp::UNIX_EPOCH,
+            UtcTimestamp::UNIX_EPOCH,
+        );
+        let b = build_evidence_bundle(
+            "bundle-1",
+            &items,
+            BundlePurpose::LiveExecution,
+            UtcTimestamp::UNIX_EPOCH,
+            UtcTimestamp::UNIX_EPOCH,
+        );
         assert_eq!(a.canonical_hash, b.canonical_hash);
     }
 
@@ -207,8 +269,20 @@ mod tests {
             record: record("rec-1", MnpiClassification::PublicConfirmed, true),
             decision: decision(UsePermission::Allowed),
         }];
-        let a = build_evidence_bundle("bundle-1", &items, BundlePurpose::LiveExecution, UtcTimestamp::UNIX_EPOCH, UtcTimestamp::UNIX_EPOCH);
-        let b = build_evidence_bundle("bundle-2", &items, BundlePurpose::LiveExecution, UtcTimestamp::UNIX_EPOCH, UtcTimestamp::UNIX_EPOCH);
+        let a = build_evidence_bundle(
+            "bundle-1",
+            &items,
+            BundlePurpose::LiveExecution,
+            UtcTimestamp::UNIX_EPOCH,
+            UtcTimestamp::UNIX_EPOCH,
+        );
+        let b = build_evidence_bundle(
+            "bundle-2",
+            &items,
+            BundlePurpose::LiveExecution,
+            UtcTimestamp::UNIX_EPOCH,
+            UtcTimestamp::UNIX_EPOCH,
+        );
         assert_ne!(a.canonical_hash, b.canonical_hash);
     }
 }

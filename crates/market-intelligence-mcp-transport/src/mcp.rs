@@ -10,7 +10,7 @@
 
 use std::io::{self, BufRead, Write};
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::state::IntelligenceState;
 use crate::tools::{call_tool, tool_definitions};
@@ -21,7 +21,10 @@ pub const SERVER_VERSION: &str = "0.1.0";
 pub const SERVER_INSTRUCTIONS: &str = "Read-only public/licensed market-intelligence service. No order-entry tool exists in this build, and none ever will -- broker execution belongs exclusively to the separate trade-guard-mcp repository.";
 
 fn initialize_result(params: &Value) -> Value {
-    let protocol_version = params.get("protocolVersion").and_then(Value::as_str).unwrap_or(PROTOCOL_VERSION_DEFAULT);
+    let protocol_version = params
+        .get("protocolVersion")
+        .and_then(Value::as_str)
+        .unwrap_or(PROTOCOL_VERSION_DEFAULT);
     json!({
         "protocolVersion": protocol_version,
         "capabilities": {"tools": {}},
@@ -31,12 +34,15 @@ fn initialize_result(params: &Value) -> Value {
 }
 
 fn success_envelope(id: Value, result: Value) -> String {
-    serde_json::to_string(&json!({"jsonrpc": "2.0", "id": id, "result": result})).expect("Value serialization is infallible")
+    serde_json::to_string(&json!({"jsonrpc": "2.0", "id": id, "result": result}))
+        .expect("Value serialization is infallible")
 }
 
 fn error_envelope(id: Value, code: i32, message: &str) -> String {
-    serde_json::to_string(&json!({"jsonrpc": "2.0", "id": id, "error": {"code": code, "message": message}}))
-        .expect("Value serialization is infallible")
+    serde_json::to_string(
+        &json!({"jsonrpc": "2.0", "id": id, "error": {"code": code, "message": message}}),
+    )
+    .expect("Value serialization is infallible")
 }
 
 /// Handles one line of the stdio transport. Returns `None` for a blank
@@ -53,7 +59,11 @@ pub fn handle_line(state: &mut IntelligenceState, line: &str) -> Option<String> 
     };
 
     let id = parsed.get("id").cloned()?;
-    let method = parsed.get("method").and_then(Value::as_str).unwrap_or("").to_string();
+    let method = parsed
+        .get("method")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     let params = parsed.get("params").cloned().unwrap_or(Value::Null);
 
     let outcome: Result<Value, (i32, String)> = match method.as_str() {
@@ -62,10 +72,15 @@ pub fn handle_line(state: &mut IntelligenceState, line: &str) -> Option<String> 
         "tools/list" => Ok(json!({"tools": tool_definitions()})),
         "tools/call" => {
             let name = params.get("name").and_then(Value::as_str).unwrap_or("");
-            let arguments = params.get("arguments").cloned().unwrap_or_else(|| json!({}));
+            let arguments = params
+                .get("arguments")
+                .cloned()
+                .unwrap_or_else(|| json!({}));
             match call_tool(state, name, &arguments) {
                 Ok(text) => Ok(json!({"content": [{"type": "text", "text": text}]})),
-                Err(message) => Ok(json!({"content": [{"type": "text", "text": message}], "isError": true})),
+                Err(message) => {
+                    Ok(json!({"content": [{"type": "text", "text": message}], "isError": true}))
+                }
             }
         }
         other => Err((-32601, format!("Method not found: {other}"))),
@@ -119,7 +134,10 @@ mod tests {
     #[test]
     fn a_notification_with_no_id_produces_no_response() {
         let mut state = test_state();
-        let response = handle_line(&mut state, r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#);
+        let response = handle_line(
+            &mut state,
+            r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#,
+        );
         assert_eq!(response, None);
     }
 
@@ -135,9 +153,18 @@ mod tests {
     #[test]
     fn tools_list_contains_no_order_entry_tool() {
         let mut state = test_state();
-        let response = handle_line(&mut state, r#"{"jsonrpc":"2.0","id":1,"method":"tools/list"}"#).unwrap();
+        let response = handle_line(
+            &mut state,
+            r#"{"jsonrpc":"2.0","id":1,"method":"tools/list"}"#,
+        )
+        .unwrap();
         let value: Value = serde_json::from_str(&response).unwrap();
-        let names: Vec<&str> = value["result"]["tools"].as_array().unwrap().iter().map(|t| t["name"].as_str().unwrap()).collect();
+        let names: Vec<&str> = value["result"]["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|t| t["name"].as_str().unwrap())
+            .collect();
         assert!(names.contains(&"health"));
         for forbidden in ["place-order", "submit-order"] {
             assert!(!names.contains(&forbidden));
@@ -157,14 +184,21 @@ mod tests {
         let mut state = test_state();
         let response = handle_line(&mut state, r#"{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"place-order","arguments":{}}}"#).unwrap();
         let value: Value = serde_json::from_str(&response).unwrap();
-        assert!(value.get("error").is_none(), "should be a tool-level error, not a JSON-RPC error: {value}");
+        assert!(
+            value.get("error").is_none(),
+            "should be a tool-level error, not a JSON-RPC error: {value}"
+        );
         assert_eq!(value["result"]["isError"], true);
     }
 
     #[test]
     fn an_unknown_top_level_method_is_a_jsonrpc_protocol_error() {
         let mut state = test_state();
-        let response = handle_line(&mut state, r#"{"jsonrpc":"2.0","id":7,"method":"bogus/method"}"#).unwrap();
+        let response = handle_line(
+            &mut state,
+            r#"{"jsonrpc":"2.0","id":7,"method":"bogus/method"}"#,
+        )
+        .unwrap();
         let value: Value = serde_json::from_str(&response).unwrap();
         assert_eq!(value["error"]["code"], -32601);
         assert_eq!(value["id"], 7);
@@ -173,7 +207,8 @@ mod tests {
     #[test]
     fn ping_is_answered() {
         let mut state = test_state();
-        let response = handle_line(&mut state, r#"{"jsonrpc":"2.0","id":8,"method":"ping"}"#).unwrap();
+        let response =
+            handle_line(&mut state, r#"{"jsonrpc":"2.0","id":8,"method":"ping"}"#).unwrap();
         let value: Value = serde_json::from_str(&response).unwrap();
         assert_eq!(value["result"], json!({}));
     }
