@@ -4,6 +4,9 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Market intelligence MCP server"
 
 [dependencies]
 market_intelligence_core = { path = "../../crates/market-intelligence-core" }
@@ -15,3 +18,12 @@ market_intelligence_mcp_transport = { path = "../../crates/market-intelligence-m
 
 [lints]
 workspace = true
+
+[package.metadata.dist]
+dist = true
+
+[package.metadata.wix]
+upgrade-guid = "757DF474-2CE3-4123-82C6-4087EFF465E0"
+path-guid = "D0EC57C7-9136-4705-9899-6F8D43C48253"
+license = false
+eula = false

@@ -4,8 +4,20 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Market intelligence background worker"
 
 [dependencies]
 
 [lints]
 workspace = true
+
+[package.metadata.dist]
+dist = true
+
+[package.metadata.wix]
+upgrade-guid = "20D7BFCC-3F9F-4015-992B-F9F854F645CB"
+path-guid = "6D80E4F3-A161-4196-9237-9BAA9A837713"
+license = false
+eula = false

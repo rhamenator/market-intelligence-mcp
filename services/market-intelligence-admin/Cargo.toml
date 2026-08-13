@@ -4,8 +4,20 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Market intelligence administration CLI"
 
 [dependencies]
 
 [lints]
 workspace = true
+
+[package.metadata.dist]
+dist = true
+
+[package.metadata.wix]
+upgrade-guid = "9E8CAEDC-81F8-4614-B66F-913A27E59CA0"
+path-guid = "D62A00AF-78C1-47AA-9073-EC91C5B67DC6"
+license = false
+eula = false

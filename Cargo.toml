@@ -20,6 +20,8 @@ version = "0.1.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
 publish = false
+authors = ["Richard M. Hamilton"]
+repository = "https://github.com/rhamenator/market-intelligence-mcp"
 
 [workspace.dependencies]
 # Deliberately minimal. `serde`/`serde_json` are kept because this system's
@@ -39,3 +41,8 @@ unsafe_code = "forbid"
 
 [workspace.lints.clippy]
 all = "warn"
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
