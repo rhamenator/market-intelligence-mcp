@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/assets/logo.png" alt="Market Intelligence MCP logo" width="220">
+</p>
+
 # market-intelligence-mcp
 
 Lawful collection, normalization, and point-in-time storage of public or
